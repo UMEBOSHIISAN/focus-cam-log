@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""focus-log: a privacy-conscious webcam focus logger powered by Gemini.
+"""focus-cam-log: a privacy-conscious webcam focus journaling tool powered by Gemini.
 
 Periodically captures a webcam snapshot, asks Gemini what you are doing,
-and stores the result in a local SQLite database. Optionally warns you
-when you are slacking off and exports a daily Markdown view to Obsidian.
+and stores the result in a local SQLite database. Optionally sends
+focus-drift reminders and exports a daily Markdown view to Obsidian.
 
 All data stays on your machine except the snapshot sent to the Gemini API
 for analysis. By default only the text activity log is kept; snapshots are
@@ -50,7 +50,7 @@ PROMPTS = {
     ),
 }
 
-SLACKING_KEYWORDS = {
+FOCUS_DRIFT_KEYWORDS = {
     "ja": ["スマホ", "遊んでいる", "寝ている", "ゲーム", "よそ見"],
     "en": ["phone", "sleeping", "game", "distracted", "away"],
 }
@@ -191,7 +191,7 @@ def analyze_activity(client, lang):
 
 
 def export_to_obsidian(activity, photo_path, retention_days):
-    """Appends one Markdown table row to today's focus-log note."""
+    """Appends one Markdown table row to today's focus log note."""
     if not OBSIDIAN_DIR:
         return
     now = datetime.datetime.now()
@@ -220,12 +220,12 @@ SUMMARY_PROMPTS = {
     "ja": (
         "以下はユーザーの1日の行動ログです（時間とカメラによる行動推論）。\n"
         "このログから、ユーザーが何時間集中して何に取り組んでいたか、休憩の頻度、"
-        "サボり（警告）の回数、全体の作業効率などの要約を日本語で作成してください。\n"
+        "リマインド（通知）の回数、全体の作業効率などの要約を日本語で作成してください。\n"
         "出力は以下のフォーマットに沿ったマークダウンにしてください。\n\n"
         "# Focus Summary - {date}\n\n"
         "## 概要\n(全体の傾向)\n\n"
         "## 集中時間と効率\n(効率の分析)\n\n"
-        "## 休憩・サボり状況\n(休憩の質やサボりの状況)\n\n"
+        "## 休憩・低集中状況\n(休憩の質や集中のゆらぎ)\n\n"
         "## 次回への推奨アクション\n(今後の改善ポイント)\n\n"
         "---\n### 原材料（Raw Events）\n{events}"
     ),
@@ -233,12 +233,12 @@ SUMMARY_PROMPTS = {
         "Below is one day of the user's activity log (timestamps plus "
         "camera-inferred activity).\n"
         "Summarize in English: hours of focused work and on what, break frequency, "
-        "number of slacking warnings, and overall efficiency.\n"
+        "number of focus-drift reminders, and overall efficiency.\n"
         "Output Markdown following this format.\n\n"
         "# Focus Summary - {date}\n\n"
         "## Overview\n(overall trend)\n\n"
         "## Focus Time & Efficiency\n(analysis)\n\n"
-        "## Breaks & Slacking\n(quality of breaks, slacking)\n\n"
+        "## Breaks & Low-Focus Periods\n(quality of breaks, focus drift)\n\n"
         "## Recommended Actions\n(improvements)\n\n"
         "---\n### Raw Events\n{events}"
     ),
@@ -289,16 +289,16 @@ def generate_daily_summary(client, lang, target_date_str=None):
 async def main_loop(args, client):
     init_db()
 
-    print("=== focus-log: Gemini Focus Monitor ===")
+    print("=== focus-cam-log: Gemini Focus Monitor ===")
     print(f"Interval: {args.interval} minutes")
-    print(f"Watch mode (slacking alerts): {'ON' if args.watch else 'OFF'}")
+    print(f"Watch mode (focus-drift reminders): {'ON' if args.watch else 'OFF'}")
     print(f"Photo saving: {f'ON (purged after {args.retention_days} days)' if args.save_photos else 'OFF (text log only)'}")
     print(f"Obsidian export: {'ON -> ' + OBSIDIAN_DIR if args.obsidian else 'OFF'}")
     print(f"SQLite DB: {DB_PATH}")
     print("Press Ctrl+C to stop.")
 
-    notify("Focus Monitor", "Focus monitoring started."
-           if args.lang == "en" else "見守り監視を開始しました！")
+    notify("Focus Monitor", "Focus logging started."
+           if args.lang == "en" else "集中ログの記録を開始しました！")
 
     while True:
         try:
@@ -320,12 +320,12 @@ async def main_loop(args, client):
 
                 cleanup_old_photos(args.retention_days)
 
-                if args.watch and any(k in activity for k in SLACKING_KEYWORDS[args.lang]):
+                if args.watch and any(k in activity for k in FOCUS_DRIFT_KEYWORDS[args.lang]):
                     notify(
                         "🚨 Focus Monitor",
-                        f"Slacking detected: \"{activity}\" — back to work!"
+                        f"Focus drift: \"{activity}\""
                         if args.lang == "en"
-                        else f"サボり検知: 「{activity}」。作業に戻りましょう！",
+                        else f"フォーカスのゆらぎ: 「{activity}」",
                     )
             else:
                 print("Failed to capture image.")
@@ -337,11 +337,11 @@ async def main_loop(args, client):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="focus-log: webcam focus logger powered by Gemini")
+        description="focus-cam-log: webcam focus journaling tool powered by Gemini")
     parser.add_argument("--interval", type=float, default=10.0,
                         help="capture interval in minutes (default: 10)")
     parser.add_argument("--watch", action="store_true",
-                        help="notify when slacking is detected")
+                        help="send focus-drift reminders")
     parser.add_argument("--save-photos", action="store_true",
                         help="keep snapshot photos on disk (default: text log only)")
     parser.add_argument("--obsidian", action="store_true",

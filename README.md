@@ -1,21 +1,22 @@
-# focus-log
+# focus-cam-log
 
-A privacy-conscious webcam focus logger powered by Google Gemini.
+A privacy-conscious, local-first webcam focus journaling tool powered by
+Google Gemini.
 
 [日本語 README はこちら](README.ja.md)
 
-focus-log periodically captures a snapshot from your webcam, asks Gemini what
-you are doing ("focused at the computer", "looking at the phone", "away from
-desk", …), and records the result in a local SQLite database. It can warn you
-with a desktop notification when you are slacking off, and generate an
+focus-cam-log periodically captures a snapshot from your webcam, asks Gemini
+what you are doing ("focused at the computer", "looking at the phone", "away
+from desk", …), and records the result in a local SQLite database. It can send
+optional focus-drift reminders as desktop notifications, and generate an
 AI-written daily summary of your focus habits.
 
 ## Features
 
 - **Periodic activity logging** — one webcam snapshot every N minutes,
   classified by Gemini into a short activity label.
-- **Slacking alerts** (`--watch`) — desktop notification when the label
-  matches slacking keywords (phone, sleeping, gaming, …).
+- **Focus-drift reminders** (`--watch`) — desktop notification when the label
+  suggests your attention has drifted (phone, sleeping, gaming, …).
 - **Daily summary** (`--summary`) — Gemini writes a Markdown report of your
   focus time, breaks, and efficiency from the day's events.
 - **Obsidian export** (`--obsidian`) — appends a Markdown table view of the
@@ -37,11 +38,11 @@ AI-written daily summary of your focus habits.
 ## Quick start
 
 ```bash
-git clone <this-repo> focus-log && cd focus-log
+git clone <this-repo> focus-cam-log && cd focus-cam-log
 ./setup.sh
 export GEMINI_API_KEY=your-key-here
-./focus_on.sh          # start monitoring in the background (watch mode on)
-./focus_off.sh         # stop monitoring
+./focus_on.sh          # start logging in the background (reminders on)
+./focus_off.sh         # stop logging
 ```
 
 Or run in the foreground:
@@ -63,7 +64,7 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 | Flag | Description | Default |
 | --- | --- | --- |
 | `--interval N` | capture interval in minutes | `10` |
-| `--watch` | notify when slacking is detected | off |
+| `--watch` | send focus-drift reminders | off |
 | `--save-photos` | keep snapshots on disk (default is text log only) | off |
 | `--retention-days N` | days to keep saved photos before purging | `3` |
 | `--obsidian` | export a daily Markdown view (needs `FOCUS_LOG_OBSIDIAN_DIR`) | off |

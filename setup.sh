@@ -4,7 +4,7 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
-echo "=== focus-log setup ==="
+echo "=== focus-cam-log setup ==="
 
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."

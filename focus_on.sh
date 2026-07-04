@@ -1,5 +1,5 @@
 #!/bin/bash
-# Starts focus-log in the background. Extra arguments are passed through
+# Starts focus-cam-log in the background. Extra arguments are passed through
 # to focus_monitor.py (e.g. ./focus_on.sh --interval 5 --save-photos --lang en).
 set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

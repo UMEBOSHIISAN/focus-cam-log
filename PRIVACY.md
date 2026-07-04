@@ -1,6 +1,6 @@
 # Privacy
 
-focus-log is a webcam-based tool. Read this before running it.
+focus-cam-log is a webcam-based tool. Read this before running it.
 
 ## What it captures
 
@@ -31,6 +31,6 @@ focus-log is a webcam-based tool. Read this before running it.
 
 ## Consent
 
-Do not run focus-log where it can capture people who have not consented —
+Do not run focus-cam-log where it can capture people who have not consented —
 shared offices, living rooms, video calls. You are responsible for complying
 with local recording and privacy laws.

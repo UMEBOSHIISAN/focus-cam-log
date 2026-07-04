@@ -1,5 +1,5 @@
 #!/bin/bash
-# Stops a background focus-log started by focus_on.sh.
+# Stops a background focus-cam-log started by focus_on.sh.
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
