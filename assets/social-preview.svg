@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="focus-cam-log — privacy-first webcam focus journaling">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="0.55" stop-color="#101a33"/>
+      <stop offset="1" stop-color="#0b2530"/>
+    </linearGradient>
+    <radialGradient id="lens" cx="0.42" cy="0.38" r="0.85">
+      <stop offset="0" stop-color="#7fd8c8"/>
+      <stop offset="0.35" stop-color="#2e7f8f"/>
+      <stop offset="0.75" stop-color="#173a55"/>
+      <stop offset="1" stop-color="#0d1c2e"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- subtle grid -->
+  <g stroke="#ffffff" stroke-opacity="0.035">
+    <path d="M0 128h1280M0 256h1280M0 384h1280M0 512h1280"/>
+    <path d="M160 0v640M320 0v640M480 0v640M640 0v640M800 0v640M960 0v640M1120 0v640"/>
+  </g>
+
+  <!-- camera lens motif -->
+  <g transform="translate(268,320)">
+    <circle r="168" fill="none" stroke="#38bdf8" stroke-opacity="0.25" stroke-width="3"/>
+    <circle r="136" fill="none" stroke="#5eead4" stroke-opacity="0.35" stroke-width="3"/>
+    <circle r="106" fill="url(#lens)" stroke="#7dd3fc" stroke-opacity="0.5" stroke-width="3"/>
+    <circle r="42" fill="#0b1220" stroke="#5eead4" stroke-opacity="0.8" stroke-width="3"/>
+    <circle r="17" fill="#5eead4" fill-opacity="0.9"/>
+    <circle cx="-32" cy="-38" r="13" fill="#e0fdf7" fill-opacity="0.55"/>
+    <!-- focus brackets -->
+    <g stroke="url(#accent)" stroke-width="7" fill="none" stroke-linecap="round">
+      <path d="M-196 -140 h-30 M-196 -140 v-30" transform="translate(-6,-6)"/>
+      <path d="M196 -140 h30 M196 -140 v-30" transform="translate(6,-6)"/>
+      <path d="M-196 140 h-30 M-196 140 v30" transform="translate(-6,6)"/>
+      <path d="M196 140 h30 M196 140 v30" transform="translate(6,6)"/>
+    </g>
+  </g>
+
+  <!-- title -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="560" y="268" font-size="76" font-weight="700" fill="#f1f5f9" letter-spacing="1">focus-cam-log</text>
+    <text x="560" y="328" font-size="28" fill="#94a3b8">privacy-first webcam</text>
+    <text x="560" y="366" font-size="28" fill="#94a3b8">focus journaling</text>
+  </g>
+
+  <!-- activity timeline dots -->
+  <g transform="translate(560,452)">
+    <path d="M0 0 H600" stroke="#ffffff" stroke-opacity="0.14" stroke-width="3"/>
+    <g fill="#5eead4">
+      <circle cx="20" r="9"/><circle cx="90" r="9"/><circle cx="160" r="9"/>
+      <circle cx="300" r="9"/><circle cx="370" r="9"/><circle cx="440" r="9"/><circle cx="510" r="9"/>
+    </g>
+    <circle cx="230" r="9" fill="#fbbf24"/>
+    <circle cx="580" r="9" fill="#fbbf24"/>
+    <text x="230" y="34" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#fbbf24" fill-opacity="0.85" text-anchor="middle">focus drift</text>
+  </g>
+
+  <!-- feature row -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="19" fill="#5eead4">
+    <text x="560" y="540">local SQLite</text>
+    <text x="736" y="540">photos opt-in</text>
+    <text x="932" y="540">auto retention</text>
+  </g>
+  <g fill="#334155" font-size="19" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="712" y="540">·</text>
+    <text x="908" y="540">·</text>
+  </g>
+</svg>
