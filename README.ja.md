@@ -1,4 +1,6 @@
-# focus-cam-log
+<p align="center">
+  <img src="assets/banner.svg" alt="focus-cam-log — privacy-first webcam focus journaling" width="100%">
+</p>
 
 Google Gemini を使った、プライバシー配慮・ローカルファーストの
 Web カメラ集中ログツール。
