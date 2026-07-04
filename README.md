@@ -20,10 +20,11 @@ AI-written daily summary of your focus habits.
   focus time, breaks, and efficiency from the day's events.
 - **Obsidian export** (`--obsidian`) — appends a Markdown table view of the
   day's log to your vault.
-- **Privacy by design** — everything is stored locally; snapshots are
-  automatically purged after a retention period (default: 3 days), and the
-  database records when each photo was deleted. Only the snapshot being
-  analyzed is sent to the Gemini API.
+- **Privacy by design** — by default only the text activity log is kept;
+  saving snapshots to disk is explicit opt-in (`--save-photos`), saved photos
+  are automatically purged after a retention period (default: 3 days), and
+  the database records when each photo was deleted. Only the snapshot being
+  analyzed is sent to the Gemini API. See [PRIVACY.md](PRIVACY.md).
 
 ## Requirements
 
@@ -63,8 +64,8 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 | --- | --- | --- |
 | `--interval N` | capture interval in minutes | `10` |
 | `--watch` | notify when slacking is detected | off |
-| `--no-photos` | don't keep snapshots on disk (log text only) | off |
-| `--retention-days N` | days to keep photos before purging | `3` |
+| `--save-photos` | keep snapshots on disk (default is text log only) | off |
+| `--retention-days N` | days to keep saved photos before purging | `3` |
 | `--obsidian` | export a daily Markdown view (needs `FOCUS_LOG_OBSIDIAN_DIR`) | off |
 | `--lang {ja,en}` | language for analysis labels and notifications | `ja` |
 | `--summary` | generate a daily summary and exit | — |
@@ -86,9 +87,11 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 ```
 ~/.focus-log/
 ├── events.sqlite      # canonical event history (never auto-deleted)
-├── photos/            # snapshots, purged after --retention-days
+├── photos/            # snapshots (only with --save-photos), purged after --retention-days
 └── summaries/         # generated daily summaries (Markdown)
 ```
+
+See [env.example](env.example) for all configuration variables.
 
 The `focus_events` table keeps `photo_exists` / `photo_deleted_at` columns so
 history stays auditable even after photos are purged.
@@ -98,9 +101,11 @@ history stays auditable even after photos are purged.
 - Snapshots of you (and anyone in frame) are sent to the Google Gemini API
   for analysis. Review [Google's API terms](https://ai.google.dev/gemini-api/terms)
   and don't point the camera at people who haven't consented.
-- Photos live only on your machine and are deleted after the retention
-  period. Use `--no-photos` for a text-only log.
+- By default no photos are kept: the analysis snapshot is deleted after each
+  cycle and only the text label is stored. With `--save-photos`, photos live
+  only on your machine and are deleted after the retention period.
 - The Obsidian export is a *view*; the SQLite database is the source of truth.
+- Full details in [PRIVACY.md](PRIVACY.md); security policy in [SECURITY.md](SECURITY.md).
 
 ## License
 

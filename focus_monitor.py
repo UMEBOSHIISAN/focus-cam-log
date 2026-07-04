@@ -6,7 +6,9 @@ and stores the result in a local SQLite database. Optionally warns you
 when you are slacking off and exports a daily Markdown view to Obsidian.
 
 All data stays on your machine except the snapshot sent to the Gemini API
-for analysis. Photos are purged automatically after a retention period.
+for analysis. By default only the text activity log is kept; snapshots are
+saved to disk only with --save-photos, and are purged after a retention
+period. The temporary analysis snapshot is deleted after each cycle.
 """
 
 import argparse
@@ -290,7 +292,7 @@ async def main_loop(args, client):
     print("=== focus-log: Gemini Focus Monitor ===")
     print(f"Interval: {args.interval} minutes")
     print(f"Watch mode (slacking alerts): {'ON' if args.watch else 'OFF'}")
-    print(f"Photo saving: {'OFF' if args.no_photos else f'ON (purged after {args.retention_days} days)'}")
+    print(f"Photo saving: {f'ON (purged after {args.retention_days} days)' if args.save_photos else 'OFF (text log only)'}")
     print(f"Obsidian export: {'ON -> ' + OBSIDIAN_DIR if args.obsidian else 'OFF'}")
     print(f"SQLite DB: {DB_PATH}")
     print("Press Ctrl+C to stop.")
@@ -303,9 +305,13 @@ async def main_loop(args, client):
             now = datetime.datetime.now()
             photo_filename = f"focus_snapshot_{now.strftime('%Y%m%d_%H%M%S')}.jpg"
 
-            ok, photo_path = capture_image(photo_filename, save_photo=not args.no_photos)
+            ok, photo_path = capture_image(photo_filename, save_photo=args.save_photos)
             if ok:
                 activity = analyze_activity(client, args.lang)
+                try:
+                    os.remove(TEMP_IMAGE_PATH)  # never leave the analysis snapshot behind
+                except OSError:
+                    pass
                 save_to_db(int(now.timestamp() * 1000), activity, photo_path)
                 print(f"[{now.strftime('%H:%M:%S')}] Logged: {activity}")
 
@@ -336,8 +342,8 @@ def main():
                         help="capture interval in minutes (default: 10)")
     parser.add_argument("--watch", action="store_true",
                         help="notify when slacking is detected")
-    parser.add_argument("--no-photos", action="store_true",
-                        help="do not keep snapshot photos on disk")
+    parser.add_argument("--save-photos", action="store_true",
+                        help="keep snapshot photos on disk (default: text log only)")
     parser.add_argument("--obsidian", action="store_true",
                         help="export a daily Markdown view (set FOCUS_LOG_OBSIDIAN_DIR)")
     parser.add_argument("--retention-days", type=int, default=3,
