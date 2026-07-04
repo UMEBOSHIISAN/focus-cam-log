@@ -1,28 +1,34 @@
 #!/usr/bin/env python3
-"""focus-cam-log: a privacy-conscious webcam focus journaling tool powered by Gemini.
+"""focus-cam-log: a privacy-conscious webcam focus journaling tool.
 
-Periodically captures a webcam snapshot, asks Gemini what you are doing,
-and stores the result in a local SQLite database. Optionally sends
+Periodically captures a webcam snapshot, asks a vision model what you are
+doing, and stores the result in a local SQLite database. Optionally sends
 focus-drift reminders and exports a daily Markdown view to Obsidian.
 
-All data stays on your machine except the snapshot sent to the Gemini API
-for analysis. By default only the text activity log is kept; snapshots are
-saved to disk only with --save-photos, and are purged after a retention
-period. The temporary analysis snapshot is deleted after each cycle.
+Two analysis providers are supported:
+- gemini (default): snapshots are sent to the Google Gemini API
+- ollama: snapshots are analyzed by a local vision model; nothing leaves
+  your machine
+
+By default only the text activity log is kept; snapshots are saved to disk
+only with --save-photos, and are purged after a retention period. The
+temporary analysis snapshot is deleted after each cycle.
 """
 
 import argparse
 import asyncio
+import base64
 import datetime
+import json
 import os
 import shutil
 import sqlite3
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 
 import cv2
-from google import genai
-from google.genai import types
 
 # --- Configuration (overridable via environment variables) ---------------
 
@@ -33,7 +39,10 @@ SUMMARIES_DIR = os.path.join(DATA_DIR, "summaries")
 TEMP_IMAGE_PATH = os.path.join(DATA_DIR, "snapshot_tmp.jpg")
 
 OBSIDIAN_DIR = os.environ.get("FOCUS_LOG_OBSIDIAN_DIR", "")
-MODEL = os.environ.get("FOCUS_LOG_MODEL", "gemini-2.5-flash")
+DEFAULT_PROVIDER = os.environ.get("FOCUS_LOG_PROVIDER", "gemini")
+DEFAULT_MODELS = {"gemini": "gemini-2.5-flash", "ollama": "qwen2.5vl:3b"}
+MODEL_ENV = os.environ.get("FOCUS_LOG_MODEL", "")
+OLLAMA_HOST = os.environ.get("FOCUS_LOG_OLLAMA_HOST", "http://localhost:11434")
 CAMERA_INDEX = int(os.environ.get("FOCUS_LOG_CAMERA_INDEX", "0"))
 
 PROMPTS = {
@@ -173,19 +182,75 @@ def capture_image(photo_filename, save_photo):
     return True, photo_path
 
 
-def analyze_activity(client, lang):
-    """Sends the captured snapshot to Gemini and returns the activity label."""
+class GeminiProvider:
+    """Cloud provider: sends the snapshot to the Google Gemini API."""
+
+    name = "gemini"
+
+    def __init__(self, model):
+        api_key = load_api_key()
+        if not api_key:
+            print("Error: GEMINI_API_KEY not found. Set it in your environment or in"
+                  f" {os.path.join(DATA_DIR, 'env')}.")
+            sys.exit(1)
+        from google import genai
+        from google.genai import types
+        self._types = types
+        self._client = genai.Client(api_key=api_key)
+        self.model = model
+
+    def analyze_image(self, image_bytes, prompt):
+        image_part = self._types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+        response = self._client.models.generate_content(
+            model=self.model, contents=[prompt, image_part])
+        return response.text.strip()
+
+    def generate_text(self, prompt):
+        response = self._client.models.generate_content(model=self.model, contents=prompt)
+        return response.text.strip()
+
+
+class OllamaProvider:
+    """Local provider: images and text never leave your machine."""
+
+    name = "ollama"
+
+    def __init__(self, model):
+        self.model = model
+        self._url = OLLAMA_HOST.rstrip("/") + "/api/generate"
+
+    def _generate(self, payload):
+        payload.update({"model": self.model, "stream": False,
+                        "options": {"temperature": 0.2}})
+        req = urllib.request.Request(
+            self._url, data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            return json.loads(resp.read())["response"].strip()
+
+    def analyze_image(self, image_bytes, prompt):
+        b64 = base64.b64encode(image_bytes).decode("ascii")
+        return self._generate({"prompt": prompt, "images": [b64]})
+
+    def generate_text(self, prompt):
+        return self._generate({"prompt": prompt})
+
+
+def make_provider(name):
+    model = MODEL_ENV or DEFAULT_MODELS[name]
+    if name == "ollama":
+        return OllamaProvider(model)
+    return GeminiProvider(model)
+
+
+def analyze_activity(provider, lang):
+    """Sends the captured snapshot to the provider and returns the activity label."""
     if not os.path.exists(TEMP_IMAGE_PATH):
         return "(snapshot missing)"
     try:
         with open(TEMP_IMAGE_PATH, "rb") as f:
             image_bytes = f.read()
-        image_part = types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=[PROMPTS[lang], image_part],
-        )
-        return response.text.strip()
+        return provider.analyze_image(image_bytes, PROMPTS[lang])
     except Exception as e:
         return f"(error: {e})"
 
@@ -248,8 +313,8 @@ SUMMARY_PROMPTS = {
 }
 
 
-def generate_daily_summary(client, lang, target_date_str=None):
-    """Generates a Markdown daily summary from SQLite via Gemini."""
+def generate_daily_summary(provider, lang, target_date_str=None):
+    """Generates a Markdown daily summary from SQLite via the provider."""
     if not target_date_str:
         target_date_str = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -275,13 +340,13 @@ def generate_daily_summary(client, lang, target_date_str=None):
     )
     prompt = SUMMARY_PROMPTS[lang].format(date=target_date_str, events=events_text)
 
-    print("Generating daily summary with Gemini...")
+    print(f"Generating daily summary with {provider.name} ({provider.model})...")
     try:
-        response = client.models.generate_content(model=MODEL, contents=prompt)
+        summary_text = provider.generate_text(prompt)
         os.makedirs(SUMMARIES_DIR, exist_ok=True)
         summary_path = os.path.join(SUMMARIES_DIR, f"Focus-Summary-{target_date_str}.md")
         with open(summary_path, "w", encoding="utf-8") as f:
-            f.write(response.text.strip())
+            f.write(summary_text)
         print(f"Daily summary written to: {summary_path}")
         return True
     except Exception as e:
@@ -289,10 +354,13 @@ def generate_daily_summary(client, lang, target_date_str=None):
         return False
 
 
-async def main_loop(args, client):
+async def main_loop(args, provider):
     init_db()
 
-    print("=== focus-cam-log: Gemini Focus Monitor ===")
+    print("=== focus-cam-log: Webcam Focus Journal ===")
+    print(f"Provider: {provider.name} ({provider.model})"
+          + (" — snapshots stay on this machine" if provider.name == "ollama"
+             else " — snapshots are sent to the Gemini API"))
     print(f"Interval: {args.interval} minutes")
     print(f"Watch mode (focus-drift reminders): {'ON' if args.watch else 'OFF'}")
     print(f"Photo saving: {f'ON (purged after {args.retention_days} days)' if args.save_photos else 'OFF (text log only)'}")
@@ -310,7 +378,7 @@ async def main_loop(args, client):
 
             ok, photo_path = capture_image(photo_filename, save_photo=args.save_photos)
             if ok:
-                activity = analyze_activity(client, args.lang)
+                activity = analyze_activity(provider, args.lang)
                 try:
                     os.remove(TEMP_IMAGE_PATH)  # never leave the analysis snapshot behind
                 except OSError:
@@ -340,7 +408,11 @@ async def main_loop(args, client):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="focus-cam-log: webcam focus journaling tool powered by Gemini")
+        description="focus-cam-log: webcam focus journaling tool")
+    parser.add_argument("--provider", choices=["gemini", "ollama"],
+                        default=DEFAULT_PROVIDER,
+                        help="analysis backend: gemini (cloud) or ollama (local)"
+                             " (default: gemini, or FOCUS_LOG_PROVIDER)")
     parser.add_argument("--interval", type=float, default=10.0,
                         help="capture interval in minutes (default: 10)")
     parser.add_argument("--watch", action="store_true",
@@ -363,20 +435,18 @@ def main():
         print("Error: --obsidian requires FOCUS_LOG_OBSIDIAN_DIR to be set.")
         sys.exit(1)
 
-    api_key = load_api_key()
-    if not api_key:
-        print("Error: GEMINI_API_KEY not found. Set it in your environment or in"
-              f" {os.path.join(DATA_DIR, 'env')}.")
+    if args.provider not in DEFAULT_MODELS:
+        print(f"Error: unknown provider '{args.provider}' (use gemini or ollama).")
         sys.exit(1)
-    client = genai.Client(api_key=api_key)
+    provider = make_provider(args.provider)
 
     if args.summary:
-        sys.exit(0 if generate_daily_summary(client, args.lang, args.summary_date) else 1)
+        sys.exit(0 if generate_daily_summary(provider, args.lang, args.summary_date) else 1)
 
     try:
-        asyncio.run(main_loop(args, client))
+        asyncio.run(main_loop(args, provider))
     except KeyboardInterrupt:
-        print("\nMonitoring stopped. Keep focusing!")
+        print("\nLogging stopped. Keep focusing!")
 
 
 if __name__ == "__main__":

@@ -10,10 +10,13 @@ focus-cam-log is a webcam-based tool. Read this before running it.
 
 ## Where data goes
 
-- **Gemini API**: every captured snapshot is sent to the configured Google
-  Gemini API for activity analysis. This is inherent to how the tool works;
-  there is no local-only analysis mode. Google's handling of that data is
-  governed by [Google's Gemini API terms](https://ai.google.dev/gemini-api/terms).
+- **Gemini provider (default)**: every captured snapshot is sent to the
+  configured Google Gemini API for activity analysis. Google's handling of
+  that data is governed by
+  [Google's Gemini API terms](https://ai.google.dev/gemini-api/terms).
+- **Ollama provider (`--provider ollama`)**: analysis runs on a local vision
+  model through your Ollama instance. In this mode no image or text is sent
+  to any external service.
 - **Local disk**: everything else stays on your machine, under
   `FOCUS_LOG_DATA_DIR` (default `~/.focus-log`):
   - `events.sqlite` — timestamped text activity labels (kept indefinitely)
