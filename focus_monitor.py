@@ -221,12 +221,13 @@ SUMMARY_PROMPTS = {
         "以下はユーザーの1日の行動ログです（時間とカメラによる行動推論）。\n"
         "このログから、ユーザーが何時間集中して何に取り組んでいたか、休憩の頻度、"
         "リマインド（通知）の回数、全体の作業効率などの要約を日本語で作成してください。\n"
+        "助言や指示（「〜しましょう」等）は書かず、観測された事実と傾向のみを記述してください。\n"
         "出力は以下のフォーマットに沿ったマークダウンにしてください。\n\n"
         "# Focus Summary - {date}\n\n"
         "## 概要\n(全体の傾向)\n\n"
         "## 集中時間と効率\n(効率の分析)\n\n"
         "## 休憩・低集中状況\n(休憩の質や集中のゆらぎ)\n\n"
-        "## 次回への推奨アクション\n(今後の改善ポイント)\n\n"
+        "## 観測された傾向\n(例: この時間帯は集中が途切れやすい傾向がありました)\n\n"
         "---\n### 原材料（Raw Events）\n{events}"
     ),
     "en": (
@@ -234,12 +235,14 @@ SUMMARY_PROMPTS = {
         "camera-inferred activity).\n"
         "Summarize in English: hours of focused work and on what, break frequency, "
         "number of focus-drift reminders, and overall efficiency.\n"
+        "Describe observed facts and patterns only; do not give advice, "
+        "instructions, or recommendations.\n"
         "Output Markdown following this format.\n\n"
         "# Focus Summary - {date}\n\n"
         "## Overview\n(overall trend)\n\n"
         "## Focus Time & Efficiency\n(analysis)\n\n"
         "## Breaks & Low-Focus Periods\n(quality of breaks, focus drift)\n\n"
-        "## Recommended Actions\n(improvements)\n\n"
+        "## Observed Patterns\n(e.g. focus tended to drift in this time range)\n\n"
         "---\n### Raw Events\n{events}"
     ),
 }

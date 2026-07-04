@@ -108,6 +108,14 @@ history stays auditable even after photos are purged.
 - The Obsidian export is a *view*; the SQLite database is the source of truth.
 - Full details in [PRIVACY.md](PRIVACY.md); security policy in [SECURITY.md](SECURITY.md).
 
+## Roadmap
+
+- Provider abstraction for local or alternative model backends
+- Local model support, such as Ollama, for users who prefer not to send
+  images to cloud APIs
+
+Not implemented in v0.1.0.
+
 ## License
 
 [MIT](LICENSE)

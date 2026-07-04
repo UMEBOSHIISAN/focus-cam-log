@@ -104,6 +104,13 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 - Obsidian エクスポートは「ビュー」であり、正本は SQLite データベースです。
 - 詳細は [PRIVACY.md](PRIVACY.md)、セキュリティポリシーは [SECURITY.md](SECURITY.md)。
 
+## Roadmap
+
+- モデルバックエンドの provider 抽象化（ローカル/代替モデル対応）
+- クラウド API に画像を送りたくないユーザー向けの Ollama 等ローカルモデル対応
+
+v0.1.0 では未実装です。
+
 ## ライセンス
 
 [MIT](LICENSE)

@@ -29,7 +29,8 @@ if [ -z "$GEMINI_API_KEY" ]; then
     echo "focus_monitor.py will also look in \${FOCUS_LOG_DATA_DIR:-~/.focus-log}/env."
 fi
 
-nohup python3 focus_monitor.py --watch "$@" > "$LOG_FILE" 2>&1 &
+# -u: unbuffered stdout so activity lines reach the log file immediately
+nohup python3 -u focus_monitor.py --watch "$@" > "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
 echo "Focus Monitor started in the background (PID: $(cat "$PID_FILE"))."
 echo "Logs: $DIR/$LOG_FILE"
