@@ -17,6 +17,10 @@ focus-cam-log is a webcam-based tool. Read this before running it.
 - **Ollama provider (`--provider ollama`)**: analysis runs on a local vision
   model through your Ollama instance. In this mode no image or text is sent
   to any external service.
+- The startup banner always states the active mode (`Mode: local-only` or
+  `Mode: cloud`), so you can verify where snapshots go before the first
+  capture. See "Persistent local-only setup" in the README to make
+  local-only survive restarts.
 - **Local disk**: everything else stays on your machine, under
   `FOCUS_LOG_DATA_DIR` (default `~/.focus-log`):
   - `events.sqlite` — timestamped text activity labels (kept indefinitely)

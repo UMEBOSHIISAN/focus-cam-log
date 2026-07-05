@@ -69,6 +69,30 @@ python3 focus_monitor.py --summary            # 今日
 python3 focus_monitor.py --summary --summary-date 2026-07-01
 ```
 
+## 恒久的な local-only 設定
+
+再起動しても、毎回 `--provider ollama` を付けなくても、**常に local-only** で
+動かしたい場合は env ファイルに設定を書きます（起動時に読み込み。優先順位は
+CLI 引数 > プロセス環境変数 > env ファイル > デフォルト）:
+
+```bash
+mkdir -p ~/.focus-log
+cat > ~/.focus-log/env <<'ENV'
+FOCUS_LOG_PROVIDER=ollama
+FOCUS_LOG_VISION_MODEL=qwen3-vl:4b
+FOCUS_LOG_SUMMARY_MODEL=qwen3-vl:4b
+ENV
+
+./focus_on.sh
+```
+
+この設定をすると `./focus_on.sh` だけで Ollama local-only モードで起動します。
+起動バナーには常に現在のモードが表示されます（`Mode: local-only` / `Mode: cloud`）。
+意図せず `Mode: cloud` と表示されたら、env ファイルが読まれていません。
+
+`FOCUS_LOG_SUMMARY_MODEL` には任意の Ollama テキストモデルを指定できます
+（vision 対応が必要なのは `FOCUS_LOG_VISION_MODEL` のみ）。
+
 ## オプション
 
 | フラグ | 説明 | デフォルト |
@@ -90,9 +114,11 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 | `FOCUS_LOG_PROVIDER` | 分析バックエンド: `gemini` / `ollama` | `gemini` |
 | `GEMINI_API_KEY` | Gemini API キー（gemini プロバイダのみ必須） | — |
 | `FOCUS_LOG_DATA_DIR` | データディレクトリ（DB・写真・サマリ） | `~/.focus-log` |
-| `FOCUS_LOG_ENV_FILE` | `GEMINI_API_KEY=...` を書いた任意ファイル | `$FOCUS_LOG_DATA_DIR/env` |
+| `FOCUS_LOG_ENV_FILE` | env ファイル: `FOCUS_LOG_*` 全変数と `GEMINI_API_KEY` を読み込む | `$FOCUS_LOG_DATA_DIR/env` |
 | `FOCUS_LOG_OBSIDIAN_DIR` | `--obsidian` 出力先の vault パス | 未設定 |
-| `FOCUS_LOG_MODEL` | モデル名 | `gemini-2.5-flash` / `qwen3-vl:4b` |
+| `FOCUS_LOG_MODEL` | モデル名（vision・サマリ共通） | `gemini-2.5-flash` / `qwen3-vl:4b` |
+| `FOCUS_LOG_VISION_MODEL` | 画像分析用モデル（`FOCUS_LOG_MODEL` より優先） | provider デフォルト |
+| `FOCUS_LOG_SUMMARY_MODEL` | 日次サマリ用モデル（`FOCUS_LOG_MODEL` より優先） | vision モデルと同じ |
 | `FOCUS_LOG_OLLAMA_HOST` | ollama プロバイダの接続先 | `http://localhost:11434` |
 | `FOCUS_LOG_CAMERA_INDEX` | OpenCV カメラデバイス番号 | `0` |
 

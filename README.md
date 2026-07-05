@@ -75,6 +75,33 @@ python3 focus_monitor.py --summary            # today
 python3 focus_monitor.py --summary --summary-date 2026-07-01
 ```
 
+## Persistent local-only setup
+
+If you want focus-cam-log to **always** run in local-only mode — surviving
+restarts, with no `--provider ollama` needed each run — put the settings in
+the env file (loaded at startup; config priority is
+CLI args > process env > env file > defaults):
+
+```bash
+mkdir -p ~/.focus-log
+cat > ~/.focus-log/env <<'ENV'
+FOCUS_LOG_PROVIDER=ollama
+FOCUS_LOG_VISION_MODEL=qwen3-vl:4b
+FOCUS_LOG_SUMMARY_MODEL=qwen3-vl:4b
+ENV
+
+./focus_on.sh
+```
+
+With this config, `./focus_on.sh` starts in Ollama local-only mode without
+passing `--provider ollama` each time. The startup banner always shows which
+mode is active (`Mode: local-only` vs `Mode: cloud`) — if you ever see
+`Mode: cloud` unexpectedly, your env file is not being read.
+
+`FOCUS_LOG_SUMMARY_MODEL` may point at any Ollama text model if you prefer a
+different one for daily summaries (vision capability is only needed for
+`FOCUS_LOG_VISION_MODEL`).
+
 ## Options
 
 | Flag | Description | Default |
@@ -96,9 +123,11 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 | `FOCUS_LOG_PROVIDER` | analysis backend: `gemini` or `ollama` | `gemini` |
 | `GEMINI_API_KEY` | Gemini API key (required for the gemini provider) | — |
 | `FOCUS_LOG_DATA_DIR` | data directory (DB, photos, summaries) | `~/.focus-log` |
-| `FOCUS_LOG_ENV_FILE` | optional file containing `GEMINI_API_KEY=...` | `$FOCUS_LOG_DATA_DIR/env` |
+| `FOCUS_LOG_ENV_FILE` | env file: any `FOCUS_LOG_*` variable and `GEMINI_API_KEY` are loaded from it | `$FOCUS_LOG_DATA_DIR/env` |
 | `FOCUS_LOG_OBSIDIAN_DIR` | Obsidian vault path for `--obsidian` export | unset |
-| `FOCUS_LOG_MODEL` | model name | `gemini-2.5-flash` / `qwen3-vl:4b` |
+| `FOCUS_LOG_MODEL` | model name (both vision and summary) | `gemini-2.5-flash` / `qwen3-vl:4b` |
+| `FOCUS_LOG_VISION_MODEL` | model for snapshot analysis (overrides `FOCUS_LOG_MODEL`) | provider default |
+| `FOCUS_LOG_SUMMARY_MODEL` | model for daily summaries (overrides `FOCUS_LOG_MODEL`) | vision model |
 | `FOCUS_LOG_OLLAMA_HOST` | Ollama endpoint for the ollama provider | `http://localhost:11434` |
 | `FOCUS_LOG_CAMERA_INDEX` | OpenCV camera device index | `0` |
 

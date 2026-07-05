@@ -32,6 +32,36 @@ import cv2
 
 # --- Configuration (overridable via environment variables) ---------------
 
+
+def _load_env_file():
+    """Loads FOCUS_LOG_* settings (and GEMINI_API_KEY) from an optional env file.
+
+    Config priority: CLI args > process environment > env file > defaults.
+    Values already present in the process environment are never overridden,
+    which is what makes a persistent local-only setup survive restarts
+    without having to pass --provider ollama every run.
+    """
+    default_dir = os.path.expanduser(os.environ.get("FOCUS_LOG_DATA_DIR", "~/.focus-log"))
+    env_file = os.environ.get("FOCUS_LOG_ENV_FILE", os.path.join(default_dir, "env"))
+    if not os.path.exists(env_file):
+        return
+    with open(env_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("export "):
+                line = line[len("export "):]
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            if key == "GEMINI_API_KEY" or key.startswith("FOCUS_LOG_"):
+                os.environ.setdefault(key, value.strip().strip("'\""))
+
+
+_load_env_file()
+
 DATA_DIR = os.path.expanduser(os.environ.get("FOCUS_LOG_DATA_DIR", "~/.focus-log"))
 DB_PATH = os.path.join(DATA_DIR, "events.sqlite")
 PHOTOS_DIR = os.path.join(DATA_DIR, "photos")
@@ -42,6 +72,8 @@ OBSIDIAN_DIR = os.environ.get("FOCUS_LOG_OBSIDIAN_DIR", "")
 DEFAULT_PROVIDER = os.environ.get("FOCUS_LOG_PROVIDER", "gemini")
 DEFAULT_MODELS = {"gemini": "gemini-2.5-flash", "ollama": "qwen3-vl:4b"}
 MODEL_ENV = os.environ.get("FOCUS_LOG_MODEL", "")
+VISION_MODEL_ENV = os.environ.get("FOCUS_LOG_VISION_MODEL", "")
+SUMMARY_MODEL_ENV = os.environ.get("FOCUS_LOG_SUMMARY_MODEL", "")
 OLLAMA_HOST = os.environ.get("FOCUS_LOG_OLLAMA_HOST", "http://localhost:11434")
 CAMERA_INDEX = int(os.environ.get("FOCUS_LOG_CAMERA_INDEX", "0"))
 
@@ -187,7 +219,7 @@ class GeminiProvider:
 
     name = "gemini"
 
-    def __init__(self, model):
+    def __init__(self, model, summary_model=None):
         api_key = load_api_key()
         if not api_key:
             print("Error: GEMINI_API_KEY not found. Set it in your environment or in"
@@ -198,6 +230,7 @@ class GeminiProvider:
         self._types = types
         self._client = genai.Client(api_key=api_key)
         self.model = model
+        self.summary_model = summary_model or model
 
     def analyze_image(self, image_bytes, prompt):
         image_part = self._types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
@@ -206,7 +239,8 @@ class GeminiProvider:
         return response.text.strip()
 
     def generate_text(self, prompt):
-        response = self._client.models.generate_content(model=self.model, contents=prompt)
+        response = self._client.models.generate_content(
+            model=self.summary_model, contents=prompt)
         return response.text.strip()
 
 
@@ -215,12 +249,13 @@ class OllamaProvider:
 
     name = "ollama"
 
-    def __init__(self, model):
+    def __init__(self, model, summary_model=None):
         self.model = model
+        self.summary_model = summary_model or model
         self._url = OLLAMA_HOST.rstrip("/") + "/api/generate"
 
-    def _generate(self, payload):
-        payload.update({"model": self.model, "stream": False,
+    def _generate(self, payload, model):
+        payload.update({"model": model, "stream": False,
                         "options": {"temperature": 0.2}})
         req = urllib.request.Request(
             self._url, data=json.dumps(payload).encode("utf-8"),
@@ -230,17 +265,18 @@ class OllamaProvider:
 
     def analyze_image(self, image_bytes, prompt):
         b64 = base64.b64encode(image_bytes).decode("ascii")
-        return self._generate({"prompt": prompt, "images": [b64]})
+        return self._generate({"prompt": prompt, "images": [b64]}, self.model)
 
     def generate_text(self, prompt):
-        return self._generate({"prompt": prompt})
+        return self._generate({"prompt": prompt}, self.summary_model)
 
 
 def make_provider(name):
-    model = MODEL_ENV or DEFAULT_MODELS[name]
+    vision_model = VISION_MODEL_ENV or MODEL_ENV or DEFAULT_MODELS[name]
+    summary_model = SUMMARY_MODEL_ENV or MODEL_ENV or vision_model
     if name == "ollama":
-        return OllamaProvider(model)
-    return GeminiProvider(model)
+        return OllamaProvider(vision_model, summary_model)
+    return GeminiProvider(vision_model, summary_model)
 
 
 def analyze_activity(provider, lang):
@@ -354,13 +390,23 @@ def generate_daily_summary(provider, lang, target_date_str=None):
         return False
 
 
+def print_mode_banner(provider):
+    """Always tell the user whether their snapshots stay local or go to the cloud."""
+    print(f"Provider: {provider.name}")
+    if provider.name == "ollama":
+        print("Mode: local-only — images and text stay on this machine")
+    else:
+        print("Mode: cloud — snapshots are sent to the Google Gemini API")
+    print(f"Vision model: {provider.model}")
+    if provider.summary_model != provider.model:
+        print(f"Summary model: {provider.summary_model}")
+
+
 async def main_loop(args, provider):
     init_db()
 
     print("=== focus-cam-log: Webcam Focus Journal ===")
-    print(f"Provider: {provider.name} ({provider.model})"
-          + (" — snapshots stay on this machine" if provider.name == "ollama"
-             else " — snapshots are sent to the Gemini API"))
+    print_mode_banner(provider)
     print(f"Interval: {args.interval} minutes")
     print(f"Watch mode (focus-drift reminders): {'ON' if args.watch else 'OFF'}")
     print(f"Photo saving: {f'ON (purged after {args.retention_days} days)' if args.save_photos else 'OFF (text log only)'}")
@@ -441,6 +487,7 @@ def main():
     provider = make_provider(args.provider)
 
     if args.summary:
+        print_mode_banner(provider)
         sys.exit(0 if generate_daily_summary(provider, args.lang, args.summary_date) else 1)
 
     try:
