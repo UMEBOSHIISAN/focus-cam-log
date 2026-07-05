@@ -69,6 +69,8 @@ SUMMARIES_DIR = os.path.join(DATA_DIR, "summaries")
 TEMP_IMAGE_PATH = os.path.join(DATA_DIR, "snapshot_tmp.jpg")
 
 OBSIDIAN_DIR = os.environ.get("FOCUS_LOG_OBSIDIAN_DIR", "")
+ALERT_STYLE = os.environ.get("FOCUS_LOG_ALERT_STYLE", "notify")
+ALERT_COOLDOWN_MINUTES = float(os.environ.get("FOCUS_LOG_ALERT_COOLDOWN_MINUTES", "20"))
 DEFAULT_PROVIDER = os.environ.get("FOCUS_LOG_PROVIDER", "gemini")
 DEFAULT_MODELS = {"gemini": "gemini-2.5-flash", "ollama": "qwen3-vl:4b"}
 MODEL_ENV = os.environ.get("FOCUS_LOG_MODEL", "")
@@ -115,10 +117,28 @@ def load_api_key():
     return None
 
 
-def notify(title, message):
-    """Sends a desktop notification (macOS native; no-op elsewhere)."""
+def notify(title, message, style=None):
+    """Sends a desktop notification.
+
+    style: "notify" (default) — macOS notification-center banner, auto-dismisses.
+           "dialog" — macOS display dialog, stays on screen until the user
+                      clicks OK. Stronger than a banner, but still a single
+                      native dialog — no fullscreen overlay, no new GUI deps.
+           "off" — no alert at all.
+    """
+    style = style or ALERT_STYLE
+    if style == "off":
+        return
     if sys.platform == "darwin" and shutil.which("osascript"):
-        script = f'display notification "{message}" with title "{title}" sound name "Glass"'
+        if style == "dialog":
+            escaped = message.replace("\\", "\\\\").replace('"', '\\"')
+            title_escaped = title.replace("\\", "\\\\").replace('"', '\\"')
+            script = (
+                f'display dialog "{escaped}" with title "{title_escaped}" '
+                'buttons {"OK"} default button "OK"'
+            )
+        else:
+            script = f'display notification "{message}" with title "{title}" sound name "Glass"'
         subprocess.run(["osascript", "-e", script], check=False)
     elif shutil.which("notify-send"):
         subprocess.run(["notify-send", title, message], check=False)
@@ -408,14 +428,20 @@ async def main_loop(args, provider):
     print("=== focus-cam-log: Webcam Focus Journal ===")
     print_mode_banner(provider)
     print(f"Interval: {args.interval} minutes")
-    print(f"Watch mode (focus-drift reminders): {'ON' if args.watch else 'OFF'}")
+    print(f"Watch mode (focus-drift reminders): {'ON' if args.watch else 'OFF'}"
+          + (f" — alert style: {ALERT_STYLE} (cooldown {ALERT_COOLDOWN_MINUTES:g} min)"
+             if args.watch else ""))
     print(f"Photo saving: {f'ON (purged after {args.retention_days} days)' if args.save_photos else 'OFF (text log only)'}")
     print(f"Obsidian export: {'ON -> ' + OBSIDIAN_DIR if args.obsidian else 'OFF'}")
     print(f"SQLite DB: {DB_PATH}")
     print("Press Ctrl+C to stop.")
 
+    # Startup notice is always a banner — a blocking dialog here would be
+    # annoying UX and is out of scope for this feature.
     notify("Focus Monitor", "Focus logging started."
-           if args.lang == "en" else "集中ログの記録を開始しました！")
+           if args.lang == "en" else "集中ログの記録を開始しました！", style="notify")
+
+    last_alert_at = None
 
     while True:
         try:
@@ -438,12 +464,18 @@ async def main_loop(args, provider):
                 cleanup_old_photos(args.retention_days)
 
                 if args.watch and any(k in activity for k in FOCUS_DRIFT_KEYWORDS[args.lang]):
-                    notify(
-                        "🚨 Focus Monitor",
-                        f"Focus drift: \"{activity}\""
-                        if args.lang == "en"
-                        else f"フォーカスのゆらぎ: 「{activity}」",
+                    cooldown_ok = (
+                        last_alert_at is None
+                        or (now - last_alert_at).total_seconds() >= ALERT_COOLDOWN_MINUTES * 60
                     )
+                    if cooldown_ok:
+                        notify(
+                            "🚨 Focus Monitor",
+                            f"Focus drift: \"{activity}\""
+                            if args.lang == "en"
+                            else f"フォーカスのゆらぎ: 「{activity}」",
+                        )
+                        last_alert_at = now
             else:
                 print("Failed to capture image.")
         except Exception as e:
@@ -479,6 +511,11 @@ def main():
 
     if args.obsidian and not OBSIDIAN_DIR:
         print("Error: --obsidian requires FOCUS_LOG_OBSIDIAN_DIR to be set.")
+        sys.exit(1)
+
+    if ALERT_STYLE not in ("notify", "dialog", "off"):
+        print(f"Error: unknown FOCUS_LOG_ALERT_STYLE '{ALERT_STYLE}' "
+              "(use notify, dialog, or off).")
         sys.exit(1)
 
     if args.provider not in DEFAULT_MODELS:

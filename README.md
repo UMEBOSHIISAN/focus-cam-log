@@ -20,8 +20,10 @@ AI-written daily summary of your focus habits.
 - **Two analysis providers** — Google Gemini (default), or a local vision
   model via [Ollama](https://ollama.com) (`--provider ollama`) so that
   **images never leave your machine**.
-- **Focus-drift reminders** (`--watch`) — desktop notification when the label
-  suggests your attention has drifted (phone, sleeping, gaming, …).
+- **Focus-drift reminders** (`--watch`) — an alert when the label suggests
+  your attention has drifted (phone, sleeping, gaming, …). Choose how loud:
+  a notification-center banner (default) or a dialog that stays on screen
+  until dismissed (`FOCUS_LOG_ALERT_STYLE=dialog`).
 - **Daily summary** (`--summary`) — Gemini writes a Markdown report of your
   focus time, breaks, and efficiency from the day's events.
 - **Obsidian export** (`--obsidian`) — appends a Markdown table view of the
@@ -102,6 +104,24 @@ mode is active (`Mode: local-only` vs `Mode: cloud`) — if you ever see
 different one for daily summaries (vision capability is only needed for
 `FOCUS_LOG_VISION_MODEL`).
 
+## Stronger focus-drift alerts
+
+The default `--watch` alert is a macOS notification-center banner — easy to
+miss, especially since a drifted-attention moment is exactly when you're not
+looking at the screen. `FOCUS_LOG_ALERT_STYLE=dialog` uses a native
+`display dialog` instead: it stays on screen until you click OK. No fullscreen
+overlay, no extra GUI dependency — just a stronger version of the same native
+macOS alert.
+
+```bash
+# ~/.focus-log/env
+FOCUS_LOG_ALERT_STYLE=dialog
+FOCUS_LOG_ALERT_COOLDOWN_MINUTES=20   # don't stack a dialog every single cycle
+```
+
+`FOCUS_LOG_ALERT_STYLE=off` disables focus-drift alerts entirely (the daily
+summary and log are unaffected either way).
+
 ### Reference setup (what the author actually runs)
 
 This tool is dogfooded daily in local-only mode on an Apple Silicon Mac mini
@@ -155,6 +175,8 @@ Notes from real use:
 | `FOCUS_LOG_MODEL` | model name (both vision and summary) | `gemini-2.5-flash` / `qwen3-vl:4b` |
 | `FOCUS_LOG_VISION_MODEL` | model for snapshot analysis (overrides `FOCUS_LOG_MODEL`) | provider default |
 | `FOCUS_LOG_SUMMARY_MODEL` | model for daily summaries (overrides `FOCUS_LOG_MODEL`) | vision model |
+| `FOCUS_LOG_ALERT_STYLE` | focus-drift alert strength: `notify` (banner), `dialog` (stays until dismissed), `off` | `notify` |
+| `FOCUS_LOG_ALERT_COOLDOWN_MINUTES` | minimum minutes between focus-drift alerts | `20` |
 | `FOCUS_LOG_OLLAMA_HOST` | Ollama endpoint for the ollama provider | `http://localhost:11434` |
 | `FOCUS_LOG_CAMERA_INDEX` | OpenCV camera device index | `0` |
 

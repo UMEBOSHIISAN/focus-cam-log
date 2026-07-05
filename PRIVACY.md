@@ -26,6 +26,9 @@ focus-cam-log is a webcam-based tool. Read this before running it.
   - `events.sqlite` — timestamped text activity labels (kept indefinitely)
   - `photos/` — snapshots, **only if you pass `--save-photos`**
   - `summaries/` — generated daily summaries
+- **Focus-drift alerts** (`--watch`): shown locally via macOS's native
+  notification center or `display dialog` (`FOCUS_LOG_ALERT_STYLE`) — never
+  sent anywhere, regardless of which analysis provider you use.
 
 ## Retention
 

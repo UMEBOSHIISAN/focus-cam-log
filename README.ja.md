@@ -19,7 +19,8 @@ AI がまとめた日次サマリも生成できます。
 - **2つの分析プロバイダ** — Google Gemini（デフォルト）、または [Ollama](https://ollama.com)
   経由のローカル vision モデル（`--provider ollama`）。ローカルなら**画像は一切マシンから出ません**。
 - **フォーカスのゆらぎ通知** (`--watch`) — スマホ・寝ている・ゲーム等、集中が逸れた
-  ラベルを検知したときにデスクトップ通知でリマインド。
+  ラベルを検知したときにリマインド。強さは選べます: 通知センターのバナー（デフォルト）か、
+  クリックするまで画面に残るダイアログ（`FOCUS_LOG_ALERT_STYLE=dialog`）。
 - **日次サマリ** (`--summary`) — その日のイベントから集中時間・休憩・効率を Gemini が Markdown レポート化。
 - **Obsidian エクスポート** (`--obsidian`) — 当日のログを Markdown テーブルとして vault に追記。
 - **プライバシー設計** — デフォルトではテキストの行動ログのみ保存。写真のディスク保存は
@@ -93,6 +94,23 @@ ENV
 `FOCUS_LOG_SUMMARY_MODEL` には任意の Ollama テキストモデルを指定できます
 （vision 対応が必要なのは `FOCUS_LOG_VISION_MODEL` のみ）。
 
+## フォーカスのゆらぎ通知を強くする
+
+デフォルトの `--watch` 通知は macOS 通知センターのバナーです。数秒で消えるため、
+集中が逸れている瞬間（＝画面を見ていない瞬間）こそ見逃しやすいという弱点があります。
+`FOCUS_LOG_ALERT_STYLE=dialog` は代わりにネイティブの `display dialog` を使い、
+OK を押すまで画面に残ります。全画面オーバーレイや新規 GUI 依存の追加ではなく、
+同じ macOS ネイティブ通知を少し強くしただけです。
+
+```bash
+# ~/.focus-log/env
+FOCUS_LOG_ALERT_STYLE=dialog
+FOCUS_LOG_ALERT_COOLDOWN_MINUTES=20   # 毎サイクル積み上がらないように
+```
+
+`FOCUS_LOG_ALERT_STYLE=off` でフォーカスのゆらぎ通知自体を無効化できます
+（日次サマリやログ記録には影響しません）。
+
 ### リファレンス構成（作者が実際に動かしている設定）
 
 このツールは Apple Silicon Mac mini（M4・32GB）上の local-only モードで
@@ -145,6 +163,8 @@ FOCUS_LOG_SUMMARY_MODEL=gemma4:12b-it-qat # 日次サマリ用（任意のロー
 | `FOCUS_LOG_MODEL` | モデル名（vision・サマリ共通） | `gemini-2.5-flash` / `qwen3-vl:4b` |
 | `FOCUS_LOG_VISION_MODEL` | 画像分析用モデル（`FOCUS_LOG_MODEL` より優先） | provider デフォルト |
 | `FOCUS_LOG_SUMMARY_MODEL` | 日次サマリ用モデル（`FOCUS_LOG_MODEL` より優先） | vision モデルと同じ |
+| `FOCUS_LOG_ALERT_STYLE` | フォーカスのゆらぎ通知の強さ: `notify`（バナー）/ `dialog`（クリックまで残る）/ `off` | `notify` |
+| `FOCUS_LOG_ALERT_COOLDOWN_MINUTES` | 通知間の最短間隔（分） | `20` |
 | `FOCUS_LOG_OLLAMA_HOST` | ollama プロバイダの接続先 | `http://localhost:11434` |
 | `FOCUS_LOG_CAMERA_INDEX` | OpenCV カメラデバイス番号 | `0` |
 
