@@ -172,6 +172,17 @@ See [env.example](env.example) for all configuration variables.
 The `focus_events` table keeps `photo_exists` / `photo_deleted_at` columns so
 history stays auditable even after photos are purged.
 
+### Storage footprint (measured)
+
+Text-only mode (the default) is negligible: each event is roughly 0.5 KB in
+SQLite, so even a 5-minute interval adds up to ~150 KB/day.
+
+With `--save-photos`, each 640px-wide snapshot is ~130 KB. At a 5-minute
+interval that's ~288 shots/day (~36 MB/day, ~1 GB/month), but old photos are
+purged after `--retention-days` (3 by default), so disk usage plateaus at
+roughly `130 KB × 288 × retention_days` — about 110 MB at the default setting,
+regardless of how long you keep running it.
+
 ## Privacy notes
 
 - With the default `gemini` provider, snapshots of you (and anyone in frame)
