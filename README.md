@@ -55,6 +55,11 @@ export GEMINI_API_KEY=your-key-here
 ./focus_off.sh         # stop logging
 ```
 
+`focus_on.sh` starts the monitor with `nohup`, so it keeps running even after
+you close the terminal window or quit the terminal app — it only stops when
+you run `focus_off.sh` or reboot. Run `focus_off.sh` when you're done, or it
+will keep capturing indefinitely.
+
 Or fully local with Ollama — no API key, images never leave your machine:
 
 ```bash
