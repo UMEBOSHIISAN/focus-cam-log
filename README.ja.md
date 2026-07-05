@@ -93,6 +93,32 @@ ENV
 `FOCUS_LOG_SUMMARY_MODEL` には任意の Ollama テキストモデルを指定できます
 （vision 対応が必要なのは `FOCUS_LOG_VISION_MODEL` のみ）。
 
+### リファレンス構成（作者が実際に動かしている設定）
+
+このツールは Apple Silicon Mac mini（M4・32GB）上の local-only モードで
+毎日実運用されています（サボり通知 + Obsidian エクスポート有効）:
+
+```bash
+# ~/.focus-log/env
+FOCUS_LOG_PROVIDER=ollama
+FOCUS_LOG_VISION_MODEL=qwen3-vl:4b        # 約15秒/フレーム — 10分間隔には十分
+FOCUS_LOG_SUMMARY_MODEL=gemma4:12b-it-qat # 日次サマリ用（任意のローカルテキストモデルで可）
+```
+
+```bash
+./focus_on.sh   # 10分間隔・--watch 通知・完全ローカル
+```
+
+実運用からのメモ:
+
+- クラウド provider との比較テストで、通常のフレームなら `qwen3-vl:4b` は
+  同等の行動ラベルを返しました。8B はメモリ2倍の価値がありませんでした
+- 日次サマリは Gemma 12B QAT ビルドが比較3モデル中（クラウド既定含む）
+  主観的に最良でした
+- 32GB マシンでは vision モデルは**1本に固定**してください。複数のローカル
+  モデルを交互に呼ぶとモデル再ロードのスラッシングが起きます
+  （実測: 約15秒/フレーム → 60〜94秒に劣化）
+
 ## オプション
 
 | フラグ | 説明 | デフォルト |

@@ -102,6 +102,33 @@ mode is active (`Mode: local-only` vs `Mode: cloud`) — if you ever see
 different one for daily summaries (vision capability is only needed for
 `FOCUS_LOG_VISION_MODEL`).
 
+### Reference setup (what the author actually runs)
+
+This tool is dogfooded daily in local-only mode on an Apple Silicon Mac mini
+(M4, 32 GB), with focus-drift reminders and the Obsidian export on:
+
+```bash
+# ~/.focus-log/env
+FOCUS_LOG_PROVIDER=ollama
+FOCUS_LOG_VISION_MODEL=qwen3-vl:4b        # ~15 s per frame — plenty for 10-min intervals
+FOCUS_LOG_SUMMARY_MODEL=gemma4:12b-it-qat # daily summaries (any local text model works)
+```
+
+```bash
+./focus_on.sh   # 10-min interval, --watch reminders, fully local
+```
+
+Notes from real use:
+
+- In a side-by-side test against the cloud provider, `qwen3-vl:4b` produced
+  equivalent activity labels on ordinary frames; the 8B variant was not worth
+  twice the memory.
+- Daily summaries from the Gemma 12B QAT build were subjectively the best of
+  the three models compared — including the cloud default.
+- On a 32 GB machine, stick to **one** vision model. Alternating between
+  several local models causes model-reload thrashing (measured: ~15 s per
+  frame degrading to 60–94 s).
+
 ## Options
 
 | Flag | Description | Default |
