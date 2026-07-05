@@ -33,7 +33,7 @@ AI がまとめた日次サマリも生成できます。
 - Web カメラ
 - 次のいずれか:
   - Gemini API キー（[Google AI Studio](https://aistudio.google.com/apikey)）
-  - [Ollama](https://ollama.com) + vision 対応モデル（例: `ollama pull qwen2.5vl:3b`）
+  - [Ollama](https://ollama.com) + vision 対応モデル（例: `ollama pull qwen3-vl:4b`）
 - デスクトップ通知: macOS（`osascript`）/ Linux（`notify-send`）。
   それ以外はコンソール出力にフォールバック。
 
@@ -50,7 +50,7 @@ export GEMINI_API_KEY=your-key-here
 完全ローカル実行（API キー不要・画像がマシンから出ない）:
 
 ```bash
-ollama pull qwen2.5vl:3b
+ollama pull qwen3-vl:4b
 ./focus_on.sh --provider ollama
 ```
 
@@ -92,7 +92,7 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 | `FOCUS_LOG_DATA_DIR` | データディレクトリ（DB・写真・サマリ） | `~/.focus-log` |
 | `FOCUS_LOG_ENV_FILE` | `GEMINI_API_KEY=...` を書いた任意ファイル | `$FOCUS_LOG_DATA_DIR/env` |
 | `FOCUS_LOG_OBSIDIAN_DIR` | `--obsidian` 出力先の vault パス | 未設定 |
-| `FOCUS_LOG_MODEL` | モデル名 | `gemini-2.5-flash` / `qwen2.5vl:3b` |
+| `FOCUS_LOG_MODEL` | モデル名 | `gemini-2.5-flash` / `qwen3-vl:4b` |
 | `FOCUS_LOG_OLLAMA_HOST` | ollama プロバイダの接続先 | `http://localhost:11434` |
 | `FOCUS_LOG_CAMERA_INDEX` | OpenCV カメラデバイス番号 | `0` |
 

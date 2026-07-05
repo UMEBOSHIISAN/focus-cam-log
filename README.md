@@ -39,7 +39,7 @@ AI-written daily summary of your focus habits.
 - One of:
   - a Gemini API key ([Google AI Studio](https://aistudio.google.com/apikey)), or
   - [Ollama](https://ollama.com) with a vision-capable model
-    (e.g. `ollama pull qwen2.5vl:3b`)
+    (e.g. `ollama pull qwen3-vl:4b`)
 - Desktop notifications: macOS (`osascript`) or Linux (`notify-send`);
   other platforms fall back to console output.
 
@@ -56,7 +56,7 @@ export GEMINI_API_KEY=your-key-here
 Or fully local with Ollama — no API key, images never leave your machine:
 
 ```bash
-ollama pull qwen2.5vl:3b
+ollama pull qwen3-vl:4b
 ./focus_on.sh --provider ollama
 ```
 
@@ -98,7 +98,7 @@ python3 focus_monitor.py --summary --summary-date 2026-07-01
 | `FOCUS_LOG_DATA_DIR` | data directory (DB, photos, summaries) | `~/.focus-log` |
 | `FOCUS_LOG_ENV_FILE` | optional file containing `GEMINI_API_KEY=...` | `$FOCUS_LOG_DATA_DIR/env` |
 | `FOCUS_LOG_OBSIDIAN_DIR` | Obsidian vault path for `--obsidian` export | unset |
-| `FOCUS_LOG_MODEL` | model name | `gemini-2.5-flash` / `qwen2.5vl:3b` |
+| `FOCUS_LOG_MODEL` | model name | `gemini-2.5-flash` / `qwen3-vl:4b` |
 | `FOCUS_LOG_OLLAMA_HOST` | Ollama endpoint for the ollama provider | `http://localhost:11434` |
 | `FOCUS_LOG_CAMERA_INDEX` | OpenCV camera device index | `0` |
 

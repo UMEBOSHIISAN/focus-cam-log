@@ -40,7 +40,7 @@ TEMP_IMAGE_PATH = os.path.join(DATA_DIR, "snapshot_tmp.jpg")
 
 OBSIDIAN_DIR = os.environ.get("FOCUS_LOG_OBSIDIAN_DIR", "")
 DEFAULT_PROVIDER = os.environ.get("FOCUS_LOG_PROVIDER", "gemini")
-DEFAULT_MODELS = {"gemini": "gemini-2.5-flash", "ollama": "qwen2.5vl:3b"}
+DEFAULT_MODELS = {"gemini": "gemini-2.5-flash", "ollama": "qwen3-vl:4b"}
 MODEL_ENV = os.environ.get("FOCUS_LOG_MODEL", "")
 OLLAMA_HOST = os.environ.get("FOCUS_LOG_OLLAMA_HOST", "http://localhost:11434")
 CAMERA_INDEX = int(os.environ.get("FOCUS_LOG_CAMERA_INDEX", "0"))
