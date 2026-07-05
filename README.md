@@ -82,6 +82,15 @@ python3 focus_monitor.py --summary            # today
 python3 focus_monitor.py --summary --summary-date 2026-07-01
 ```
 
+Watch what's being detected live, in a separate terminal window:
+
+```bash
+./focus_watch.sh   # tails the log, filtered to activity/mode lines only
+```
+
+This is read-only — it just follows the log file and never affects the
+running monitor. Close the window or hit Ctrl+C any time.
+
 ## Persistent local-only setup
 
 If you want focus-cam-log to **always** run in local-only mode — surviving

@@ -75,6 +75,15 @@ python3 focus_monitor.py --summary            # 今日
 python3 focus_monitor.py --summary --summary-date 2026-07-01
 ```
 
+別ターミナルウィンドウで、今検知している内容をリアルタイムに眺める:
+
+```bash
+./focus_watch.sh   # ログを追跡し、行動/モード行だけをフィルタして表示
+```
+
+これは読み取り専用です。ログファイルを追うだけで、稼働中の monitor には
+一切影響しません。いつでも Ctrl+C かウィンドウを閉じて止められます。
+
 ## 恒久的な local-only 設定
 
 再起動しても、毎回 `--provider ollama` を付けなくても、**常に local-only** で
